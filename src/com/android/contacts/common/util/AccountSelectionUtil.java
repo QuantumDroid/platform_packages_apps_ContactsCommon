@@ -112,10 +112,10 @@ public class AccountSelectionUtil {
         return getSelectAccountDialog(activity, resId, onClickListener, null);
     }
 
-    public static Dialog getSelectAccountDialog(Context context, int resId,
+    public static Dialog getSelectAccountDialog(Activity activity, int resId,
             DialogInterface.OnClickListener onClickListener,
             DialogInterface.OnCancelListener onCancelListener) {
-        return getSelectAccountDialog(context, resId, onClickListener,
+        return getSelectAccountDialog(activity, resId, onClickListener,
             onCancelListener, true);
     }
 
@@ -125,9 +125,15 @@ public class AccountSelectionUtil {
      */
     public static Dialog getSelectAccountDialog(Activity activity, int resId,
             DialogInterface.OnClickListener onClickListener,
-            DialogInterface.OnCancelListener onCancelListener) {
+            DialogInterface.OnCancelListener onCancelListener, boolean includeSIM) {
         final AccountTypeManager accountTypes = AccountTypeManager.getInstance(activity);
-        final List<AccountWithDataSet> writableAccountList = accountTypes.getAccounts(true);
+        List<AccountWithDataSet> writableAccountList = accountTypes.getAccounts(true);
+        if (includeSIM) {
+            writableAccountList = accountTypes.getAccounts(true);
+        } else {
+            writableAccountList = accountTypes.getAccounts(true,
+                AccountTypeManager.FLAG_ALL_ACCOUNTS_WITHOUT_SIM);
+        }
 
         Log.i(LOG_TAG, "The number of available accounts: " + writableAccountList.size());
 
@@ -194,14 +200,19 @@ public class AccountSelectionUtil {
 
    public static void doImport(Activity activity, int resId, AccountWithDataSet account,
             int subscriptionId) {
-        if (resId == R.string.import_from_sim) {
-            doImportFromSim(activity, account, subscriptionId);
-        } else if (resId == R.string.import_from_vcf_file) {
-            doImportFromVcfFile(activity, account);
+        switch (resId) {
+            case R.string.import_from_sim: {
+                doImportFromSim(activity, account, subscriptionId);
+                break;
+            }
+            case R.string.import_from_vcf_file: {
+                doImportFromVcfFile(activity, account);
+                break;
+            }
         }
     }
 
-    public static void doImportFromSim(Context context, AccountWithDataSet account,
+    public static void doImportFromSim(Activity activity, AccountWithDataSet account,
             int subscriptionId) {
         Intent importIntent = new Intent(SimContactsConstants.ACTION_MULTI_PICK_SIM);
         if (account != null) {
@@ -210,7 +221,7 @@ public class AccountSelectionUtil {
             importIntent.putExtra(SimContactsConstants.ACCOUNT_DATA, account.dataSet);
         }
             importIntent.putExtra(SimContactsConstants.SLOT_KEY, mImportSub);
-        context.startActivity(importIntent);
+        activity.startActivity(importIntent);
     }
 
     public static void doImportFromVcfFile(Activity activity, AccountWithDataSet account) {
